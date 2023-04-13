@@ -3,7 +3,6 @@
 #include <set>
 #include <map>
 #include <random>
-#include <chrono>
 #include <windows.h>
 #include <string>
 
@@ -13,9 +12,12 @@ using namespace std;
 random_device rd;
 mt19937 gen(rd());
 
+int nodesCount = 0;
+
 // Структура для хранения информации об узле
-struct Node
+class Node
 {
+public:
     string name; // Имя узла
     set<Node*> neighbors; // Соседи узла
     set<Node*> subscribers; // Подписчики на события узла
@@ -98,7 +100,8 @@ struct Node
     Node* CreateNode()
     {
         // Создаем новый узел
-        Node* new_node = new Node(defaulNodeName + to_string(rand() % 100));
+        Node* new_node = new Node(defaulNodeName + to_string(nodesCount));
+        nodesCount++;
         // Добавляем новый узел в список соседей
         neighbors.insert(new_node);
         // Подписываемся на новый узел
@@ -166,7 +169,8 @@ void UpdateNetwork(vector<Node>& nodes) {
         // Проверяем, что узел не был уничтожен 
         if (!node.destroyed)
         { // Выбираем случайное действие для узла 
-            uniform_int_distribution<> dis(1, 5); int action = dis(gen); // Выполняем выбранное действие 
+            uniform_int_distribution<> dis(1, 5); int action = dis(gen); 
+            // Выполняем выбранное действие 
             switch (action)
             {
             case 1:
@@ -174,24 +178,38 @@ void UpdateNetwork(vector<Node>& nodes) {
                 break;
 
             case 2:
-                if (!node.neighbors.empty())
+                try
                 {
-                    uniform_int_distribution<> dis(0, node.neighbors.size() - 1);
-                    int index = dis(gen);
-                    auto it = node.neighbors.begin();
-                    advance(it, index);
-                    node.Subscribe(*it);
+                    if (!node.neighbors.empty())
+                    {
+                        uniform_int_distribution<> dis(0, node.neighbors.size() - 1);
+                        int index = dis(gen);
+                        auto it = node.neighbors.begin();
+                        advance(it, index);
+                        node.Subscribe(*it);
+                    }
+                }
+                catch (const exception& e)
+                {
+                    cout << "Neighbor adding error";
                 }
                 break;
 
             case 3:
-                if (!node.subscribers.empty())
+                try{
+                    if (!node.subscribers.empty())
+                    {
+                        uniform_int_distribution<> dis(0, node.subscribers.size() - 1);
+                        int index = dis(gen);
+                        auto it = node.subscribers.begin();
+                        advance(it, index);
+                        node.Unsubscribe(*it);
+                    }
+
+                }
+                catch (const exception& e)
                 {
-                    uniform_int_distribution<> dis(0, node.subscribers.size() - 1);
-                    int index = dis(gen);
-                    auto it = node.subscribers.begin();
-                    advance(it, index);
-                    node.Unsubscribe(*it);
+                    cout << "Subscribing adding error";
                 }
                 break;
 
@@ -229,12 +247,12 @@ int main() {
     vector<Node> nodes;
     string defaultName = "Node";
 
-
     try
     {
         for (int i = 0; i < 10; i++)
         {
-            nodes.push_back(Node(defaultName + to_string(i)));
+            nodes.push_back(Node(defaultName + to_string(nodesCount)));
+            nodesCount++;
         }
 
         // Соединяем узлы случайным образом 
